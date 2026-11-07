@@ -1,0 +1,19 @@
+server:
+  port: 8093
+  address: 127.0.0.1
+spring:
+  application:
+    name: cita-service
+  config:
+    import: optional:file:../../.env[.properties]
+  datasource:
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3307}/bd_lab11_cita
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+servicios:
+  pacientes: ${PACIENTES_URL:http://127.0.0.1:8091/api/pacientes}
+  medicos: ${MEDICOS_URL:http://127.0.0.1:8092/api/medicos}
