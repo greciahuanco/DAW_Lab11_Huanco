@@ -13,6 +13,18 @@ public class Pedido {
     private Long idCliente;
     @Column(precision = 12, scale = 2)
     private BigDecimal total;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private EstadoPedido estado = EstadoPedido.PENDIENTE;
+
+    public EstadoPedido getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoPedido estado) {
+        this.estado = estado;
+    }
+
 
     public Long getIdPedido() {
         return idPedido;

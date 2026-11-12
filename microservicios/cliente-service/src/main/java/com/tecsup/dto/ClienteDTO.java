@@ -21,6 +21,7 @@ public class ClienteDTO {
     private String telefono;
     @NotBlank(message = "El DNI es obligatorio")
     @Pattern(regexp = "[0-9]{8}", message = "El DNI debe tener 8 dígitos")
+    @com.fasterxml.jackson.annotation.JsonAlias("nro_dni")
     private String nroDni;
     @NotBlank(message = "El estado es obligatorio")
     @Pattern(regexp = "ACTIVO|INACTIVO", message = "El estado debe ser ACTIVO o INACTIVO")

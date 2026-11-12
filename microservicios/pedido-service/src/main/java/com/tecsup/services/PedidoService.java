@@ -1,6 +1,13 @@
 package com.tecsup.services;
 
 import com.tecsup.dto.PedidoDTO;
+import com.tecsup.dto.PedidoRegistroDTO;
+import com.tecsup.dto.DetallePedidoDTO;
+import com.tecsup.client.ClienteClient;
+import com.tecsup.client.ProductoClient;
+import com.tecsup.model.EstadoPedido;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import com.tecsup.dto.PedidoResponse;
 import com.tecsup.exception.ResourceNotFoundException;
 import com.tecsup.model.Pedido;
@@ -17,9 +24,15 @@ public class PedidoService {
     private final PedidoRepository repo;
     private final DetallePedidoRepository detalles;
 
-    public PedidoService(PedidoRepository repo, DetallePedidoRepository detalles) {
+    private final ClienteClient clientes;
+    private final ProductoClient productos;
+
+    public PedidoService(PedidoRepository repo, DetallePedidoRepository detalles,
+                         ClienteClient clientes, ProductoClient productos) {
         this.repo = repo;
         this.detalles = detalles;
+        this.clientes = clientes;
+        this.productos = productos;
     }
 
     @Transactional(readOnly = true)
@@ -38,13 +51,34 @@ public class PedidoService {
     }
 
     @Transactional
-    public PedidoResponse crear(PedidoDTO dto) {
+    public PedidoResponse crear(PedidoRegistroDTO registro) {
+        PedidoDTO dto = new PedidoDTO();
+        dto.setIdCliente(registro.clienteId());
+        dto.setFecha(registro.fecha() == null ? LocalDate.now(ZoneId.of("America/Lima")) : registro.fecha());
+        if (registro.detalles() == null) {
+            var producto = productos.obtener(registro.productoId());
+            DetallePedidoDTO detalle = new DetallePedidoDTO();
+            detalle.setIdProducto(producto.id());
+            detalle.setCantidad(registro.cantidad());
+            detalle.setPrecio(producto.precio());
+            dto.setDetalles(List.of(detalle));
+            dto.setTotal(producto.precio().multiply(BigDecimal.valueOf(registro.cantidad())));
+            if (dto.getTotal().compareTo(new BigDecimal("9999999999.99")) > 0) {
+                throw new IllegalArgumentException("El total excede el importe permitido");
+            }
+        } else {
+            dto.setDetalles(registro.detalles());
+            dto.setTotal(registro.total());
+        }
         return guardar(new Pedido(), dto);
     }
 
     @Transactional
     public PedidoResponse actualizar(Long id, PedidoDTO dto) {
-        Pedido existente = buscar(id);
+        Pedido existente = bloquear(id);
+        if (existente.getEstado() != EstadoPedido.PENDIENTE) {
+            throw new IllegalArgumentException("Solo se pueden editar pedidos pendientes");
+        }
         validarTotal(dto);
         detalles.deleteByIdPedido(id);
         return guardar(existente, dto);
@@ -78,14 +112,31 @@ public class PedidoService {
     }
 
     private PedidoResponse respuesta(Pedido p) {
-        return new PedidoResponse(p.getIdPedido(), p.getFecha(), p.getIdCliente(),
-                p.getTotal(), detalles.findByIdPedidoOrderByIdDetalle(p.getIdPedido()));
+        var cliente = clientes.obtener(p.getIdCliente());
+        var lineas = detalles.findByIdPedidoOrderByIdDetalle(p.getIdPedido()).stream()
+                .map(d -> new PedidoResponse.Detalle(d.getIdDetalle(), d.getIdPedido(), d.getIdProducto(),
+                        d.getCantidad(), d.getPrecio(), productos.obtener(d.getIdProducto())))
+                .toList();
+        var unica = lineas.size() == 1 ? lineas.getFirst() : null;
+        return new PedidoResponse(p.getIdPedido(), p.getIdPedido(), p.getFecha(), p.getIdCliente(),
+                p.getTotal(), p.getEstado(), cliente, unica == null ? null : unica.cantidad(),
+                unica == null ? null : unica.producto(), lineas);
     }
 
     @Transactional
-    public void eliminar(Long id) {
-        Pedido pedido = buscar(id);
-        detalles.deleteByIdPedido(id);
-        repo.delete(pedido);
+    public void cambiarEstado(Long id, EstadoPedido estado) {
+        Pedido pedido = bloquear(id);
+        if (pedido.getEstado() == estado) {
+            return;
+        }
+        if (pedido.getEstado() != EstadoPedido.PENDIENTE) {
+            throw new IllegalArgumentException("Solo se puede cambiar el estado de un pedido pendiente");
+        }
+        pedido.setEstado(estado);
+    }
+
+    private Pedido bloquear(Long id) {
+        return repo.buscarParaActualizar(id).orElseThrow(() ->
+                new ResourceNotFoundException("Pedido no encontrado con id: " + id));
     }
 }

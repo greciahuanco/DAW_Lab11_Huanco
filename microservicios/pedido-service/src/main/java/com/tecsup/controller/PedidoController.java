@@ -1,6 +1,8 @@
 package com.tecsup.controller;
 
 import com.tecsup.dto.PedidoDTO;
+import com.tecsup.dto.PedidoRegistroDTO;
+import com.tecsup.dto.EstadoPedidoDTO;
 import com.tecsup.services.PedidoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +28,7 @@ public class PedidoController {
     }
 
     @PostMapping
-    public ResponseEntity<?> guardar(@Valid @RequestBody PedidoDTO dto) {
+    public ResponseEntity<?> guardar(@Valid @RequestBody PedidoRegistroDTO dto) {
         return ResponseEntity.status(201).body(service.crear(dto));
     }
 
@@ -35,9 +37,9 @@ public class PedidoController {
         return ResponseEntity.ok(service.actualizar(id, dto));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        service.eliminar(id);
-        return ResponseEntity.ok("Eliminado correctamente");
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<?> cambiarEstado(@PathVariable Long id, @Valid @RequestBody EstadoPedidoDTO dto) {
+        service.cambiarEstado(id, dto.estado());
+        return ResponseEntity.ok(java.util.Map.of("id", id, "estado", dto.estado()));
     }
 }

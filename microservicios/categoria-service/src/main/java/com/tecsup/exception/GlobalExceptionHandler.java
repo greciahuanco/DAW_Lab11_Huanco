@@ -38,4 +38,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> manejarPersistencia(DataIntegrityViolationException ex) {
         return ResponseEntity.status(409).body(Map.of("mensaje", "Los datos no se pueden guardar por una restricción de la base", "codigo", "409"));
     }
+
+    @ExceptionHandler(org.springframework.dao.DataAccessException.class)
+    public ResponseEntity<Map<String, String>> manejarBaseDeDatos() {
+        return ResponseEntity.internalServerError().body(Map.of("mensaje", "No se pudo completar la operación en la base de datos", "codigo", "500"));
+    }
 }

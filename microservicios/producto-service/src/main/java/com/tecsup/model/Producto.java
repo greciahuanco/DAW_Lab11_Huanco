@@ -6,6 +6,17 @@ import java.time.LocalDate;
 
 @Entity
 public class Producto {
+    @Transient
+    private com.tecsup.dto.CategoriaRemoto categoria;
+
+    public com.tecsup.dto.CategoriaRemoto getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(com.tecsup.dto.CategoriaRemoto categoria) {
+        this.categoria = categoria;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

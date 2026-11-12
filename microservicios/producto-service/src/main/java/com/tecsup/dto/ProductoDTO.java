@@ -11,7 +11,7 @@ public class ProductoDTO {
     @Size(max = 100, message = "El nombre admite hasta 100 caracteres")
     private String nombre;
     @NotNull(message = "El precio es obligatorio")
-    @DecimalMin(value = "0.00", message = "El precio no puede ser negativo")
+    @Positive(message = "El precio debe ser mayor que cero")
     @Digits(integer = 10, fraction = 2, message = "El precio admite hasta 10 enteros y 2 decimales")
     private BigDecimal precio;
     @NotNull(message = "El stock es obligatorio")

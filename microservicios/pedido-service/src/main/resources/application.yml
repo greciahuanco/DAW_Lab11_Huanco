@@ -11,3 +11,16 @@ spring:
       hibernate:
         jdbc:
           time_zone: America/Lima
+
+eureka:
+  instance:
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 5
+
+spring.cloud.openfeign.client.config.default:
+  connect-timeout: 2000
+  read-timeout: 3000
