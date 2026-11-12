@@ -28,7 +28,7 @@ java = str(Path(env['JAVA_HOME']) / 'bin/java')
 offset = 1010 if args.perfil == 'prod' else 0
 services = {'eureka-server': 8761, 'cliente-service': 8081 + offset,
             'categoria-service': 8082 + offset, 'producto-service': 8083 + offset,
-            'pedido-service': 8084 + offset, 'api-gateway': 8080}
+            'pedido-service': 8084 + offset, 'gateway-service': 8080}
 if args.balanceo:
     services['categoria-secundaria'] = 8085 + offset
 
@@ -38,7 +38,7 @@ def module(name):
 def endpoint(name):
     if name == 'eureka-server':
         return '/'
-    if name == 'api-gateway':
+    if name == 'gateway-service':
         return '/api/categorias'
     return '/api/configuracion'
 

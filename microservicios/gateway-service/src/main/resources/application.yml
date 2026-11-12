@@ -3,7 +3,7 @@ server:
   address: 127.0.0.1
 spring:
   application:
-    name: api-gateway
+    name: gateway-service
   cloud:
     gateway:
       server:
@@ -11,6 +11,11 @@ spring:
           httpclient:
             connect-timeout: 2000
             response-timeout: 12s
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+              include-expression: "serviceId matches '(?i)categoria-service|producto-service|cliente-service|pedido-service'"
           routes:
             - id: cliente
               uri: lb://cliente-service
@@ -34,6 +39,22 @@ eureka:
     hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
   client:
+    register-with-eureka: true
+    fetch-registry: true
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
+
+management:
+  endpoint:
+    gateway:
+      access: read-only
+  endpoints:
+    web:
+      exposure:
+        include: health,gateway
+
+logging:
+  level:
+    org.springframework.cloud.gateway: ${GATEWAY_LOG_LEVEL:DEBUG}
+    org.springframework.cloud.loadbalancer: ${GATEWAY_LOG_LEVEL:DEBUG}
