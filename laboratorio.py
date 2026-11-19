@@ -12,7 +12,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('accion', choices=['compilar', 'iniciar', 'detener', 'estado'])
 parser.add_argument('--perfil', choices=['dev', 'prod'], default='dev')
 parser.add_argument('--balanceo', action='store_true')
+parser.add_argument('--servicio', choices=['config-server', 'eureka-server', 'cliente-service', 'categoria-service', 'producto-service', 'pedido-service', 'gateway-service'])
+parser.add_argument('--demora-ms', type=int, default=0)
 args = parser.parse_args()
+if args.demora_ms < 0 or args.demora_ms > 10000:
+    parser.error('La demora debe estar entre 0 y 10000 ms')
+if args.demora_ms and args.servicio not in ('cliente-service', 'categoria-service', 'producto-service'):
+    parser.error('Seleccione un servicio Cliente, Categoría o Producto para simular demora')
 runtime = root / '.runtime' / args.perfil
 runtime.mkdir(parents=True, exist_ok=True)
 env = os.environ.copy()
@@ -26,16 +32,21 @@ if not env.get('JAVA_HOME'):
 env['PATH'] = env['JAVA_HOME'] + os.pathsep + env['PATH']
 java = str(Path(env['JAVA_HOME']) / 'bin/java')
 offset = 1010 if args.perfil == 'prod' else 0
-services = {'eureka-server': 8761, 'cliente-service': 8081 + offset,
+services = {'config-server': 8888, 'eureka-server': 8761, 'cliente-service': 8081 + offset,
             'categoria-service': 8082 + offset, 'producto-service': 8083 + offset,
             'pedido-service': 8084 + offset, 'gateway-service': 8080}
 if args.balanceo:
     services['categoria-secundaria'] = 8085 + offset
 
+if args.servicio:
+    services = {args.servicio: services[args.servicio]}
+
 def module(name):
     return 'categoria-service' if name == 'categoria-secundaria' else name
 
 def endpoint(name):
+    if name == 'config-server':
+        return '/categoria-service/default'
     if name == 'eureka-server':
         return '/'
     if name == 'gateway-service':
@@ -50,7 +61,7 @@ def available(name, port):
         return False
 
 def stop():
-    for name in dict.fromkeys([*services, 'categoria-secundaria']):
+    for name in reversed(list(dict.fromkeys([*services] + ([] if args.servicio else ['categoria-secundaria'])))):
         path = runtime / (name + '.pid')
         if not path.exists():
             continue
@@ -97,13 +108,13 @@ else:
             project = root / 'microservicios' / module(name)
             jar = project / 'target' / (module(name) + '-0.0.1-SNAPSHOT.jar')
             with (runtime / (name + '.log')).open('a') as log:
-                process = subprocess.Popen([java, '-Xms64m', '-Xmx256m', '-jar', str(jar), f'--server.port={port}'], cwd=project, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+                process = subprocess.Popen([java, '-Xms64m', '-Xmx256m', '-jar', str(jar), f'--server.port={port}', f'--simulacion.demora-ms={args.demora_ms}'], cwd=project, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             (runtime / (name + '.pid')).write_text(str(process.pid))
-            if name == 'eureka-server':
+            if name in ('config-server', 'eureka-server'):
                 deadline = time.monotonic() + 30
                 while not available(name, port):
                     if process.poll() is not None or time.monotonic() > deadline:
-                        raise RuntimeError('Eureka no está disponible. Revise eureka-server.log')
+                        raise RuntimeError(name + ' no está disponible. Revise su archivo de log')
                     time.sleep(0.5)
         deadline = time.monotonic() + 150
         while not all(available(name, port) for name, port in services.items()):

@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/categorias")
 public class CategoriaController {
     private final CategoriaService service;
+    private final com.tecsup.config.DemoraSimulada demora;
 
-    public CategoriaController(CategoriaService service) {
+    public CategoriaController(CategoriaService service, com.tecsup.config.DemoraSimulada demora) {
         this.service = service;
+        this.demora = demora;
     }
 
     @GetMapping
@@ -22,6 +24,7 @@ public class CategoriaController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> obtener(@PathVariable Long id) {
+        demora.esperar();
         return ResponseEntity.ok(service.obtener(id));
     }
 

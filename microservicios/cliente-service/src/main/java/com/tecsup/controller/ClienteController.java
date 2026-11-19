@@ -10,9 +10,13 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/clientes")
 public class ClienteController {
     private final ClienteService service;
+    private final com.tecsup.services.PedidoCircuitService pedidos;
+    private final com.tecsup.config.DemoraSimulada demora;
 
-    public ClienteController(ClienteService service) {
+    public ClienteController(ClienteService service, com.tecsup.config.DemoraSimulada demora, com.tecsup.services.PedidoCircuitService pedidos) {
         this.service = service;
+        this.demora = demora;
+        this.pedidos = pedidos;
     }
 
     @GetMapping
@@ -20,8 +24,15 @@ public class ClienteController {
         return ResponseEntity.ok(service.listar());
     }
 
+    @GetMapping("/{id}/pedidos")
+    public ResponseEntity<?> pedidos(@PathVariable Long id) {
+        service.obtener(id);
+        return ResponseEntity.ok(pedidos.obtener(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> obtener(@PathVariable Long id) {
+        demora.esperar();
         return ResponseEntity.ok(service.obtener(id));
     }
 

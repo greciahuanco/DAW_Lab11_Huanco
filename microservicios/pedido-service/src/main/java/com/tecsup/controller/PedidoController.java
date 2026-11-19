@@ -22,6 +22,11 @@ public class PedidoController {
         return ResponseEntity.ok(service.listar());
     }
 
+    @GetMapping("/cliente/{id}")
+    public ResponseEntity<?> porCliente(@PathVariable Long id) {
+        return ResponseEntity.ok(service.listarPorCliente(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> obtener(@PathVariable Long id) {
         return ResponseEntity.ok(service.obtener(id));

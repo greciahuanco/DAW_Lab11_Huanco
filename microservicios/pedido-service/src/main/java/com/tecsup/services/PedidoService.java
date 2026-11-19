@@ -26,13 +26,18 @@ public class PedidoService {
 
     private final ClienteClient clientes;
     private final ProductoClient productos;
+    private final ClienteCircuitService clienteCircuit;
+    private final ProductoCircuitService productoCircuit;
 
     public PedidoService(PedidoRepository repo, DetallePedidoRepository detalles,
-                         ClienteClient clientes, ProductoClient productos) {
+                         ClienteClient clientes, ProductoClient productos,
+                         ClienteCircuitService clienteCircuit, ProductoCircuitService productoCircuit) {
         this.repo = repo;
         this.detalles = detalles;
         this.clientes = clientes;
         this.productos = productos;
+        this.clienteCircuit = clienteCircuit;
+        this.productoCircuit = productoCircuit;
     }
 
     @Transactional(readOnly = true)
@@ -43,6 +48,13 @@ public class PedidoService {
     @Transactional(readOnly = true)
     public PedidoResponse obtener(Long id) {
         return respuesta(buscar(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.tecsup.dto.PedidoResumen> listarPorCliente(Long id) {
+        return repo.findByIdClienteOrderByIdPedido(id).stream()
+                .map(p -> new com.tecsup.dto.PedidoResumen(p.getIdPedido(), p.getTotal(), p.getEstado()))
+                .toList();
     }
 
     private Pedido buscar(Long id) {
@@ -95,6 +107,8 @@ public class PedidoService {
 
     private PedidoResponse guardar(Pedido pedido, PedidoDTO dto) {
         validarTotal(dto);
+        clientes.obtener(dto.getIdCliente());
+        dto.getDetalles().forEach(detalle -> productos.obtener(detalle.getIdProducto()));
         pedido.setFecha(dto.getFecha());
         pedido.setIdCliente(dto.getIdCliente());
         pedido.setTotal(dto.getTotal());
@@ -112,10 +126,10 @@ public class PedidoService {
     }
 
     private PedidoResponse respuesta(Pedido p) {
-        var cliente = clientes.obtener(p.getIdCliente());
+        var cliente = clienteCircuit.obtener(p.getIdCliente());
         var lineas = detalles.findByIdPedidoOrderByIdDetalle(p.getIdPedido()).stream()
                 .map(d -> new PedidoResponse.Detalle(d.getIdDetalle(), d.getIdPedido(), d.getIdProducto(),
-                        d.getCantidad(), d.getPrecio(), productos.obtener(d.getIdProducto())))
+                        d.getCantidad(), d.getPrecio(), productoCircuit.obtener(d.getIdProducto())))
                 .toList();
         var unica = lineas.size() == 1 ? lineas.getFirst() : null;
         return new PedidoResponse(p.getIdPedido(), p.getIdPedido(), p.getFecha(), p.getIdCliente(),

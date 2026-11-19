@@ -14,10 +14,13 @@ public class ProductoService {
     private final ProductoRepository repo;
 
     private final CategoriaClient categorias;
+    private final CategoriaCircuitService categoriaCircuit;
 
-    public ProductoService(ProductoRepository repo, CategoriaClient categorias) {
+
+    public ProductoService(ProductoRepository repo, CategoriaClient categorias, CategoriaCircuitService categoriaCircuit) {
         this.repo = repo;
         this.categorias = categorias;
+        this.categoriaCircuit = categoriaCircuit;
     }
 
     public List<Producto> listar() {
@@ -48,11 +51,12 @@ public class ProductoService {
         existente.setPrecio(dto.getPrecio());
         existente.setStock(dto.getStock());
         existente.setCategoriaId(dto.getCategoriaId());
-        return repo.save(completar(existente));
+        existente.setCategoria(categorias.obtener(existente.getCategoriaId()));
+        return repo.save(existente);
     }
 
     private Producto completar(Producto producto) {
-        producto.setCategoria(categorias.obtener(producto.getCategoriaId()));
+        producto.setCategoria(categoriaCircuit.obtener(producto.getCategoriaId()));
         return producto;
     }
 

@@ -14,8 +14,13 @@ public class ConfigController {
     @Value("${server.port}")
     private String puerto;
 
+    @Value("${mensaje.texto}")
+    private String mensaje;
+    @Value("${spring.datasource.url}")
+    private String baseDatos;
+
     @GetMapping("/api/configuracion")
     public Map<String, String> configuracion() {
-        return Map.of("ambiente", ambiente, "servicio", servicio, "puerto", puerto);
+        return Map.of("ambiente", ambiente, "servicio", servicio, "puerto", puerto, "mensaje", mensaje, "baseDatos", baseDatos);
     }
 }

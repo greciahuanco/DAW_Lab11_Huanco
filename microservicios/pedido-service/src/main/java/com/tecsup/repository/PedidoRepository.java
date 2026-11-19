@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
+    java.util.List<Pedido> findByIdClienteOrderByIdPedido(Long idCliente);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Pedido p where p.idPedido = :id")
     Optional<Pedido> buscarParaActualizar(@Param("id") Long id);

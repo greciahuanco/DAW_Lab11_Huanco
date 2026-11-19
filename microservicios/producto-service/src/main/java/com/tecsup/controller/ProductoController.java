@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/productos")
 public class ProductoController {
     private final ProductoService service;
+    private final com.tecsup.config.DemoraSimulada demora;
 
-    public ProductoController(ProductoService service) {
+    public ProductoController(ProductoService service, com.tecsup.config.DemoraSimulada demora) {
         this.service = service;
+        this.demora = demora;
     }
 
     @GetMapping
@@ -22,6 +24,7 @@ public class ProductoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> obtener(@PathVariable Long id) {
+        demora.esperar();
         return ResponseEntity.ok(service.obtener(id));
     }
 
